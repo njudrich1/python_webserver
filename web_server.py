@@ -6,18 +6,21 @@ from urllib.parse import urlparse
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+from file_management import FileController
+
 
 class MyServer(BaseHTTPRequestHandler):
-
     def __init__(self, request, client_address, server):
         super().__init__(request, client_address, server)
-        self._path_request = ''
+        # self._path_request = ''
         self._valid_path = False
-        self._file_extension = ''
+        # self._file_extension = ''
+        self._file_controller = FileController  # set object type as a FileController object
 
     def do_GET(self):
         print(f"1) client path request: {self.path}")
-        self._path_request = self.path
+        # self._path_request = self.path
+        self._file_controller = FileController()
         self._valid_path = self._parse_url()
         print(f"4 - Valid Path - {self._valid_path}")
         self._send_http_status()
@@ -27,44 +30,26 @@ class MyServer(BaseHTTPRequestHandler):
             self.send_header("Content-type", self._get_content_type())
             self.end_headers()
             print(f"7 - Header sent")
-            self._get_file()
+            file_data = self._file_controller.get_file()
+            self.wfile.write(file_data)
         print("10 - Not a valid path - file not sent")
 
     def _parse_url(self):
         print("Start: _parse_url")
-        success = False
-        self._is_root_path()
-        parse_url_result = urlparse(self._path_request)  # Need a function to process these
-        print(f"parse url {parse_url_result}")
-
-        print(f"Before concat - self._path_request: {self._path_request}")
-        self._path_request = os.getcwd() + self._path_request           # Put Working Dir path in a Config file can't use in init method.
-        print(f"After concat - self._path_request: {self._path_request}")
-        print("End: _parse_url")
-        if os.path.exists(self._path_request) and self._file_extension_validator():
-            success = True
+        # self._file_controller = FileController()
+        url_data = urlparse(self.path)  # Need a function to process these
+        print(f"parse url {url_data}")
+        url_data_path = self._is_root_path(url_data.path)
+        self._file_controller.set_dir_file_path(url_data_path)
+        success = self._file_controller.file_exists()
         return success
 
-    def _is_root_path(self):
-        if self._path_request == "/" and len(self._path_request) == 1:
+    @staticmethod
+    def _is_root_path(url_path):
+        if url_path == "/" and len(url_path) == 1:
             print(f"2 - Path request is root - update")
-            self._path_request = self._path_request + 'index.html'
-
-    def _find_file_extension(self):
-        url_file = self._path_request.split('/')[-1]
-        print(f"url_file: {url_file}")
-        return url_file.split('.')[-1]
-
-    def _file_extension_validator(self):
-        valid = False
-        extension_list = ["html", "css", "js", "ico"]
-        self._file_extension = self._find_file_extension()
-        for extension in range(len(extension_list)):
-            if extension_list[extension] == self._file_extension:
-                print(f"file_extension: {self._file_extension}")
-                valid = True
-                break
-        return valid
+            url_path = url_path + 'index.html'
+        return url_path
 
     def _get_content_type(self):
         content_type = {
@@ -73,7 +58,7 @@ class MyServer(BaseHTTPRequestHandler):
             "js": "text/javascript",
             "ico": "text/html"  # Work around - trouble reading image file
         }
-        return content_type[self._file_extension]
+        return content_type[self._file_controller.get_file_extension()]
 
     def _send_http_status(self):
         """
@@ -87,15 +72,6 @@ class MyServer(BaseHTTPRequestHandler):
         else:
             print("5 - send status err")
             self.send_response(HTTPStatus.NOT_FOUND.value, HTTPStatus.NOT_FOUND.description)
-
-    def _get_file(self):
-        print("8")
-        file_size = os.path.getsize(self._path_request)
-        # file = open(self._path_request)
-        with open(self._path_request) as file:
-            file_data = file.read(file_size)
-        self.wfile.write(bytes(file_data, 'utf-8'))
-        print("9 - file sent to client")
 
 
 def run(http_server=HTTPServer, http_request_handler=MyServer, port_number=8000):
