@@ -1,7 +1,8 @@
 from sys import argv
 import os
+import json
 
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -40,7 +41,10 @@ class MyServer(BaseHTTPRequestHandler):
         url_data = urlparse(self.path)  # Need a function to process these
         print(f"parse url {url_data}")
         url_data_path = self._is_root_path(url_data.path)
-        self._file_controller.set_dir_file_path(url_data_path)
+        print(f"Before Parse - Query String: {url_data.query}")
+        self._parse_query_string(url_data.query)  # Process any query strings - TBC
+        # Where do I put the data from the query string - some type of html - py, php, js??
+        self._file_controller.set_dir_file_path(url_data_path)  # Process URL path
         success = self._file_controller.file_exists()
         return success
 
@@ -51,11 +55,22 @@ class MyServer(BaseHTTPRequestHandler):
             url_path = url_path + 'index.html'
         return url_path
 
+    @staticmethod
+    def _parse_query_string(query_string):
+        if not query_string == '':
+            print("parsing query string")
+            q_string_dict = parse_qs(query_string)
+            with open("./form_example/info.json", "w") as outfile:
+                print("writing to json")
+                json.dump(q_string_dict, outfile)
+            print(f"After Parse: {q_string_dict}")
+
     def _get_content_type(self):
         content_type = {
             "html": "text/html",
             "css": "text/css",
             "js": "text/javascript",
+            "json": "application/json",
             "ico": "text/html"  # Work around - trouble reading image file
         }
         return content_type[self._file_controller.get_file_extension()]

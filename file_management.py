@@ -45,7 +45,7 @@ class FileController:
     @staticmethod
     def _file_extension_validator(extension):
         valid_extension = False
-        extension_list = ["html", "css", "js", "ico"]
+        extension_list = ["html", "css", "js", "json", "ico"]
         if extension in extension_list:
             valid_extension = True
         print(f"extension state: {valid_extension}")
