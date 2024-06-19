@@ -1,3 +1,5 @@
+import cgi
+from urllib.parse import urlparse, parse_qs
 from sys import argv
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -21,6 +23,40 @@ class MyServer(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(requested_data)
         print("----- END: Get -----")
+
+    def do_POST(self):
+        print(f"BEGIN: do_POST:")
+        # boundary = {}     # TODO to handle 'multipart/form-data' forms
+        # ctype, temp_dict = cgi.parse_header(self.headers['Content-Type'])
+        # byte_boundary = bytes(temp_dict['boundary'], 'utf-8')
+        # boundary['boundary'] = byte_boundary
+        # content_type = (ctype; boundary)
+        # print(self.headers['Content-Type'])
+        # print(type(self.headers['Content-Type']))
+        # exit(0)
+        post_header_data = {'REQUEST_METHOD': self.command,
+                            'CONTENT_TYPE': self.headers['Content-Type'],
+                            'CONTENT_LENGTH': self.headers['Content-Length']}
+        print(f"header_data: {self.headers}")
+        print(f"post_header_data: {post_header_data}")
+        post_data = cgi.parse(self.rfile, post_header_data)
+        print(f"END: Post Data: {post_data}")
+
+        # First Attempt - works!! ----
+        # pdict = {}
+        # ctype, temp_dict = cgi.parse_header(self.headers.get('content-type'))
+        # print(f"ctype - cgi.parse_header : {ctype}")
+        # print(f"temp_dict - cgi.parse_header : {temp_dict}")
+        # byte_boundary = bytes(temp_dict['boundary'], 'utf-8')
+        # print(f"pdict boundary convert to bytes: {byte_boundary}")
+        # pdict['boundary'] = byte_boundary
+        # print(f"{pdict}")
+        # content_len = self.headers.get('Content-length')
+        # print(f"Content-length: {content_len}")
+        # pdict['content-length'] = content_len
+        # print(f"{pdict}")
+        # fields = cgi.parse_multipart(self.rfile, pdict)
+        # print(f"cgi.parse_multipart: {fields}")
 
 
 def run(http_server=HTTPServer, http_request_handler=MyServer, port_number=8000):
