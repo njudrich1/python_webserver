@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+
+<h1>Browser Sends User Information to the Server</h1>
+<form action="/about/index.html" method="GET">
+Name: <input type="text" name="name"><br>
+E-mail: <input type="text" name="email"><br>
+<input type="submit">
+</form>
+
+<h1>Server Sends the User Information back to the Browser to be Displayed</h1>
+<h2>Name:</h2>
+<p id="rx_name"></p>
+<h2>Email:</h2>
+<p id="rx_email"></p>
+
+<script src="./scripts.js" ></script>
+
+</body>
+</html>
