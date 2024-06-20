@@ -26,37 +26,40 @@ class MyServer(BaseHTTPRequestHandler):
 
     def do_POST(self):
         print(f"BEGIN: do_POST:")
-        # boundary = {}     # TODO to handle 'multipart/form-data' forms
-        # ctype, temp_dict = cgi.parse_header(self.headers['Content-Type'])
-        # byte_boundary = bytes(temp_dict['boundary'], 'utf-8')
-        # boundary['boundary'] = byte_boundary
-        # content_type = (ctype; boundary)
-        # print(self.headers['Content-Type'])
-        # print(type(self.headers['Content-Type']))
-        # exit(0)
-        post_header_data = {'REQUEST_METHOD': self.command,
-                            'CONTENT_TYPE': self.headers['Content-Type'],
-                            'CONTENT_LENGTH': self.headers['Content-Length']}
-        print(f"header_data: {self.headers}")
-        print(f"post_header_data: {post_header_data}")
-        post_data = cgi.parse(self.rfile, post_header_data)
-        print(f"END: Post Data: {post_data}")
-
-        # First Attempt - works!! ----
-        # pdict = {}
-        # ctype, temp_dict = cgi.parse_header(self.headers.get('content-type'))
-        # print(f"ctype - cgi.parse_header : {ctype}")
-        # print(f"temp_dict - cgi.parse_header : {temp_dict}")
-        # byte_boundary = bytes(temp_dict['boundary'], 'utf-8')
-        # print(f"pdict boundary convert to bytes: {byte_boundary}")
-        # pdict['boundary'] = byte_boundary
-        # print(f"{pdict}")
-        # content_len = self.headers.get('Content-length')
-        # print(f"Content-length: {content_len}")
-        # pdict['content-length'] = content_len
-        # print(f"{pdict}")
-        # fields = cgi.parse_multipart(self.rfile, pdict)
-        # print(f"cgi.parse_multipart: {fields}")
+        # print(f"header_data: \n{self.headers}") # DBG
+        content_type = self.headers['Content-Type']
+        content_length = self.headers['Content-Length']
+        content_form_type, temp_dict = cgi.parse_header(content_type)
+        # print(f"Content Form Type: {content_form_type}") # DBG
+        if content_form_type == 'multipart/form-data':
+            # If in the HTML: enctype="multipart/form-data"
+            # print("cgi.parse_multipart") # DBG
+            post_data_header = {}
+            boundary_in_bytes = bytes(temp_dict['boundary'], 'utf-8')  # convert boundary value from str to bytes.
+            # print(f" post_data_header boundary value converted to bytes: {boundary_in_bytes}") # DBG
+            post_data_header['boundary'] = boundary_in_bytes
+            post_data_header['content-length'] = content_length
+            # print(f"post_header_data: {post_data_header}") # DBG
+            post_data = cgi.parse_multipart(self.rfile, post_data_header)
+        else:
+            # If in the HTML: enctype="application/x-www-form-urlencoded"
+            # print("cgi.parse") # DBG
+            post_data_header = {'REQUEST_METHOD': self.command,
+                                'CONTENT_TYPE': content_type,
+                                'CONTENT_LENGTH': content_length}
+            post_data = cgi.parse(self.rfile, post_data_header)
+        print(f"Received Post Data: {post_data}")
+        #
+        self.web_app = WebApplication()
+        self.web_app.process_server_request(self.path)
+        status_code, status_info = self.web_app.get_app_status_code()
+        self.send_response(status_code, status_info)
+        content_type, requested_data = self.web_app.get_app_data()
+        self.send_header("Content-type", content_type)
+        self.end_headers()
+        self.wfile.write(requested_data)
+        #
+        print(f"END: do_POST")
 
 
 def run(http_server=HTTPServer, http_request_handler=MyServer, port_number=8000):
